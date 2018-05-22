@@ -232,12 +232,12 @@ using Base.Test, Images, Colors, FixedPointNumbers
         #DataTypes
         img = oneunits(Gray{Float64}, 10, 10)
         ret = histmatch(img, img)
-        @test all(ret .== zero(eltype(img)))
+        @test all(ret .== 1)
         @test eltype(ret) == eltype(img)
 
         img = oneunits(Gray{N0f8}, 10, 10)
         ret = histmatch(img, img)
-        @test all(ret .== zero(eltype(img)))
+        @test all(ret .== 1)
         @test eltype(ret) == eltype(img)
 
         img = oneunits(Gray{N0f16}, 10, 10)
@@ -258,7 +258,7 @@ using Base.Test, Images, Colors, FixedPointNumbers
 
         img = oneunits(RGB{Float64}, 10, 10)
         ret = histmatch(img, img)
-        @test all(map((i, r) -> isapprox(zero(RGB), r, atol = 0.001), img, ret))
+        @test all(map((i, r) -> isapprox(oneunit(RGB), r, atol = 0.001), img, ret))
         @test eltype(ret) == eltype(img)
 
         img = oneunits(ARGB{N0f8}, 10, 10)
