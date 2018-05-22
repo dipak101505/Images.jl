@@ -398,6 +398,23 @@ Returns a grayscale histogram matched image with a granularity of `nbins` number
 matched and `oimg` is the image having the desired histogram to be matched to.
 
 """
+function histmatch(img::AbstractArray{T}, oimg::AbstractArray, nbins::Integer = 400) where T<:NumberLike
+    imin, imax = min(minfinite(img), minfinite(oimg)), max(maxfinite(img), maxfinite(oimg))
+    if T<:Integer
+        # Ensure that the bin boundaries come out as integer-valued even if represented as Float64
+        if imax-imin < nbins
+            oedges = linspace(imin, imax, imax-imin+1)
+        else
+            istep = round(Int, (imax-imin)/(nbins-1))
+            oedges = linspace(imin, imin+istep*(nbins-1), nbins)
+        end
+    else
+        oedges = StatsBase.histrange([Float64(imin), Float64(imax)], nbins, :left)
+    end
+    _, ohist = imhist(oimg, oedges)
+    _histmatch(img, oedges, ohist)
+end
+
 histmatch(img::ImageMeta, oimg::AbstractArray, nbins::Integer = 400) = shareproperties(img, histmatch(data(img), oimg, nbins))
 
 _hist_match_pixel(pixel::T, bins, lookup_table) where {T<:NumberLike} = T(bins[lookup_table[searchsortedlast(bins, pixel)]])
@@ -418,17 +435,18 @@ end
 
 function _histmatch(img::AbstractArray, oedges::Range, ohist::AbstractArray{Int})
     bins, histogram = imhist(img, oedges)
-    ohist[1] = zero(eltype(ohist))
-    ohist[end] = zero(eltype(ohist))
-    histogram[1] = zero(eltype(histogram))
-    histogram[end] = zero(eltype(histogram))
     cdf = cumsum(histogram)
     norm_cdf = cdf / cdf[end]
     ocdf = cumsum(ohist)
     norm_ocdf = ocdf / ocdf[end]
     lookup_table = zeros(Int, length(norm_cdf))
-    for I in eachindex(cdf)
-        lookup_table[I] = indmin(abs.(norm_ocdf .- norm_cdf[I]))
+    i = 1
+    for j = 1:length(norm_cdf)
+        p = norm_cdf[j]
+        while i < length(norm_ocdf) && norm_ocdf[i+1] <= p
+            i += 1
+        end
+        lookup_table[j] = i
     end
     hist_matched_img = similar(img)
     for I in eachindex(img)

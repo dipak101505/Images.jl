@@ -272,6 +272,16 @@ using Base.Test, Images, Colors, FixedPointNumbers
         edges, hist = imhist(img, 5)
         himg = Images._histmatch(img, edges, hist)
         @test himg == [0, 0, 2, 2, 4, 4, 6, 6, 8, 8]
+
+        img = [1 2; 3 4]
+        imgm = histmatch(img, 2*img)
+        @test imgm == 2*img
+        imgm = histmatch(img, 2*img, 8)
+        @test imgm == 2*img
+        imgm = histmatch(img-1, 2*(img-1))
+        @test imgm == 2*(img-1)
+        imgm = histmatch(img-1, 2*(img-1), 7)
+        @test imgm == 2*(img-1)
     end
 
     @testset "CLAHE" begin
